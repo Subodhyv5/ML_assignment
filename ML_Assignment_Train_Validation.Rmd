@@ -1,0 +1,69 @@
+---
+title: "ML_Assignment"
+author: "Subodh Varkhede"
+date: "October 1, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(data.table)
+library(dplyr)
+library(lubridate)
+library(caret)
+library(corrplot)
+df <- as.data.frame(fread(here::here("pml-training.csv")))
+```
+
+## Summary of prediction variable
+
+```{r Summary}
+summary(as.factor(df$classe))
+```
+
+## Data cleaning
+
+STEP 1 : Remove ~ 100 features from data having more than 19k "NA" values (df_new)
+STEP 2 : Remove "Sr","Names", "Time Stamp" variables (df_new_2)
+
+```{r filter_df}
+
+df_new_2 <- df %>% 
+  select_if(~sum(!is.na(.)) > 19000) %>%
+  select(-c("V1","user_name","raw_timestamp_part_1","raw_timestamp_part_2","cvtd_timestamp"))
+
+
+glimpse(df_new_2)
+  
+```
+
+
+## Train model (Gradient boosting)
+I have used "gbm" method from caret package
+Accuracy > 99%
+
+Step 1 :  Split Data in Train + Validation (75 / 25)
+Step 2 :  Train model ("gbm" in caret)
+Step 3:   Check accuracy on Validation set
+
+```{r model}
+
+inTraining <- createDataPartition(df_new_2$classe,p=0.75,list=FALSE)
+
+training <- df_new_2[ inTraining,]
+validation  <- df_new_2[-inTraining,]
+
+mod_train <- train(classe~.,method="gbm",data=training,verbose=FALSE)
+
+mod_train
+```
+
+## Model accuracy
+
+Model accuracy on validation set is more than 98%
+
+```{r Accuracy}
+
+pred_val <- predict(mod_train,validation)
+confusionMatrix (as.factor(pred_val),as.factor(validation$classe))
+
+```
