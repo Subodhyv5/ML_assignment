@@ -1,0 +1,48 @@
+---
+title: "ML_Assignment"
+author: "Subodh Varkhede"
+date: "October 1, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(data.table)
+library(dplyr)
+library(lubridate)
+library(caret)
+library(corrplot)
+df <- as.data.frame(fread(here::here("pml-training.csv")))
+```
+
+```{r filter_df}
+
+df_new_2 <- df %>% 
+  select_if(~sum(!is.na(.)) > 19000) %>%
+  select(-c("V1","user_name","raw_timestamp_part_1","raw_timestamp_part_2","cvtd_timestamp"))
+
+```
+
+## Final Model & accuracy on complete Data set
+
+Training GBM model on cleaned data set (df_new_2)
+Model accuracy on complete Data is more than 99%
+ 
+```{r Final Model}
+
+model <- train(classe~.,method="gbm",data=df_new_2,verbose = FALSE)
+model
+
+pred_train <- predict(model,df_new_2)
+confusionMatrix (as.factor(pred_train),as.factor(df_new_2$classe))
+
+```
+
+## Test set Prediction 
+
+```{r Test set predictio}
+
+test <- fread(here::here("pml-testing.csv"))
+pred_test <- as.data.frame(predict(model,test))
+colnames(pred_test)[1] <- c("Prediction")
+pred_test
+```
